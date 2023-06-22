@@ -64,27 +64,37 @@ func (a StakeAuthorization) ValidateBasic() error {
 
 // Accept implements Authorization.Accept.
 func (a StakeAuthorization) Accept(ctx sdk.Context, msg sdk.Msg) (authz.AcceptResponse, error) {
-	var validatorAddress string
+	var err error
+	var validatorAddress sdk.AccAddress
 	var amount sdk.Coin
 
 	switch msg := msg.(type) {
 	case *MsgDelegate:
-		validatorAddress = msg.ValidatorAddress
+		validatorAddress, err = sdk.AccAddressFromHexUnsafe(msg.ValidatorAddress)
 		amount = msg.Amount
 	case *MsgUndelegate:
-		validatorAddress = msg.ValidatorAddress
+		validatorAddress, err = sdk.AccAddressFromHexUnsafe(msg.ValidatorAddress)
 		amount = msg.Amount
 	case *MsgBeginRedelegate:
-		validatorAddress = msg.ValidatorDstAddress
+		validatorAddress, err = sdk.AccAddressFromHexUnsafe(msg.ValidatorDstAddress)
 		amount = msg.Amount
 	default:
 		return authz.AcceptResponse{}, sdkerrors.ErrInvalidRequest.Wrap("unknown msg type")
 	}
+	if err != nil {
+		return authz.AcceptResponse{}, sdkerrors.ErrInvalidRequest.Wrapf("failed to unmarshal the validator addr from msg: %v, err: %s", msg.String(), err.Error())
+	}
 
 	isValidatorExists := false
 	allowedList := a.GetAllowList().GetAddress()
+
 	for _, validator := range allowedList {
-		if validator == validatorAddress {
+		allowedValidator, err := sdk.AccAddressFromBech32(validator)
+		if err != nil {
+			continue
+		}
+
+		if allowedValidator.Equals(validatorAddress) {
 			isValidatorExists = true
 			break
 		}
@@ -92,7 +102,11 @@ func (a StakeAuthorization) Accept(ctx sdk.Context, msg sdk.Msg) (authz.AcceptRe
 
 	denyList := a.GetDenyList().GetAddress()
 	for _, validator := range denyList {
-		if validator == validatorAddress {
+		denyValidator, err := sdk.AccAddressFromBech32(validator)
+		if err != nil {
+			continue
+		}
+		if denyValidator.Equals(validatorAddress) {
 			return authz.AcceptResponse{}, sdkerrors.ErrUnauthorized.Wrapf("cannot delegate/undelegate to %s validator", validator)
 		}
 	}
