@@ -465,11 +465,13 @@ func (app *BaseApp) setState(mode runTxMode, header tmproto.Header) {
 func (app *BaseApp) setPreState(number int64, header tmproto.Header) {
 	app.preDeliverStates = []*state{} // reset
 
+	var msCopy sdk.CacheMultiStore
+	if _, ok := app.cms.(*rootmulti.Store); ok {
+		msCopy = app.cms.(*rootmulti.Store).DeepCopyMultiStore()
+	}
+
 	for i := int64(0); i < number; i ++ {
-		var ms sdk.CacheMultiStore
-		if _, ok := app.cms.(*rootmulti.Store); ok {
-			ms = app.cms.(*rootmulti.Store).DeepCopyMultiStore()
-		}
+		ms := msCopy.CacheMultiStore()
 		baseState := &state{
 			ms:  ms,
 			ctx: sdk.NewContext(ms, header, false, app.upgradeChecker, app.logger),
