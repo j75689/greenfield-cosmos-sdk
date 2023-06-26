@@ -548,16 +548,14 @@ func (app *BaseApp) PreDeliverTx(req abci.RequestPreDeliverTx) {
 	app.runTxOnContext(ctx, runTxModePreDeliver, req.Tx)
 }
 
-func (app *BaseApp) PreCommit() (res abci.ResponsePrefetch) {
+func (app *BaseApp) PreCommit(req abci.RequestPreCommit) (res abci.ResponsePrefetch) {
 	defer func() {
 		if r := recover(); r != nil {
 			res = abci.ResponsePrefetch{Error: errorsmod.Wrapf(sdkerrors.ErrPanic, "%v", r).Error()}
 		}
 	}()
 
-	for i := 0; i < len(app.preDeliverStates); i++ {
-		app.preDeliverStates[i].ms.Write()
-	}
+	app.preDeliverStates[req.StateIndex].ms.Write()
 
 	res = abci.ResponsePrefetch{Code: abci.CodeTypeOK}
 	return
