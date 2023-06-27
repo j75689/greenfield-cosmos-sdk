@@ -18,11 +18,11 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
+	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 )
 
 type (
@@ -179,6 +179,7 @@ func NewBaseApp(
 		msgServiceRouter: NewMsgServiceRouter(),
 		txDecoder:        txDecoder,
 		fauxMerkleMode:   false,
+		preDeliverStates: make([]*state, 0),
 	}
 
 	for _, option := range options {
@@ -477,9 +478,9 @@ func (app *BaseApp) setState(mode runTxMode, header tmproto.Header) {
 }
 
 func (app *BaseApp) setPreState(number int64, header tmproto.Header) {
-	app.preDeliverStates = []*state{} // reset
+	app.preDeliverStates = app.preDeliverStates[:0] // reset, keep allocated memory
 
-	for i := int64(0); i < number; i ++ {
+	for i := int64(0); i < number; i++ {
 		var ms sdk.CacheMultiStore
 		if _, ok := app.cms.(*rootmulti.Store); ok {
 			ms = app.cms.(*rootmulti.Store).DeepCopyMultiStore()
