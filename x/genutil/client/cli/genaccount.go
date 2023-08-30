@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -30,22 +32,26 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 `,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Println("fuckkkkkkk")
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			serverCtx := server.GetServerContextFromCmd(cmd)
 			config := serverCtx.Config
 
 			config.SetRoot(clientCtx.HomeDir)
-
+			fmt.Println("config.RootDir: ", config.RootDir)
 			addr, err := sdk.AccAddressFromHexUnsafe(args[0])
 			if err != nil {
 				return err
 			}
+
+			fmt.Println("addr: ", addr.String())
 
 			appendflag, _ := cmd.Flags().GetBool(flagAppendMode)
 			vestingStart, _ := cmd.Flags().GetInt64(flagVestingStart)
 			vestingEnd, _ := cmd.Flags().GetInt64(flagVestingEnd)
 			vestingAmtStr, _ := cmd.Flags().GetString(flagVestingAmt)
 
+			fmt.Println("AddGenesisAccount")
 			return auth.AddGenesisAccount(clientCtx.Codec, addr, appendflag, config.GenesisFile(), args[1], vestingAmtStr, vestingStart, vestingEnd)
 		},
 	}
