@@ -1,12 +1,8 @@
 package cli
 
 import (
-	"bufio"
-	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/helpers"
@@ -40,31 +36,9 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			config.SetRoot(clientCtx.HomeDir)
 
-			var kr keyring.Keyring
 			addr, err := sdk.AccAddressFromHexUnsafe(args[0])
 			if err != nil {
-				inBuf := bufio.NewReader(cmd.InOrStdin())
-				keyringBackend, _ := cmd.Flags().GetString(flags.FlagKeyringBackend)
-
-				if keyringBackend != "" && clientCtx.Keyring == nil {
-					var err error
-					kr, err = keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.HomeDir, inBuf, clientCtx.Codec)
-					if err != nil {
-						return err
-					}
-				} else {
-					kr = clientCtx.Keyring
-				}
-
-				k, err := kr.Key(args[0])
-				if err != nil {
-					return fmt.Errorf("failed to get address from Keyring: %w", err)
-				}
-
-				addr, err = k.GetAddress()
-				if err != nil {
-					return err
-				}
+				return err
 			}
 
 			appendflag, _ := cmd.Flags().GetBool(flagAppendMode)
