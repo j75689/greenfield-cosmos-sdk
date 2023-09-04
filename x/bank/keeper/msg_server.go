@@ -46,11 +46,12 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", msg.ToAddress)
 	}
 
-	if ctx.IsUpgraded(upgradetypes.Nagqu) {
-		if k.PaymentKeeper != nil && k.PaymentKeeper.IsPaymentAccount(ctx, to) {
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "payment account %s is not allowed to receive funds", msg.ToAddress)
-		}
-	}
+	// if ctx.IsUpgraded(upgradetypes.Nagqu) {
+	//
+	// 	if k.PaymentKeeper != nil && k.PaymentKeeper.IsPaymentAccount(ctx, to) {
+	// 		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "payment account %s is not allowed to receive funds", msg.ToAddress)
+	// 	}
+	// }
 
 	err = k.SendCoins(ctx, from, to, msg.Amount)
 	if err != nil {
