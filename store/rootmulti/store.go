@@ -161,6 +161,24 @@ func (rs *Store) MigrateStores(targetType types.StoreType, newDb dbm.DB) error {
 	return nil
 }
 
+// InspectStore implements Store.
+func (rs *Store) InspectStore() {
+	total := uint64(0)
+	storeSizeMap := make(map[string]uint64, len(rs.stores))
+	for key, store := range rs.stores {
+		iterator := store.Iterator(nil, nil)
+		for ; iterator.Valid(); iterator.Next() {
+			size := uint64(len(iterator.Key()) + len(iterator.Value()))
+			total += size
+			storeSizeMap[key.Name()] += size
+		}
+		_ = iterator.Close()
+	}
+
+	fmt.Printf("store size: %+v\n", storeSizeMap)
+	fmt.Printf("total size: %d\n", total)
+}
+
 // MountStoreWithDB implements CommitMultiStore.
 func (rs *Store) MountStoreWithDB(key types.StoreKey, typ types.StoreType, db dbm.DB) {
 	if key == nil {
