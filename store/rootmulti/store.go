@@ -166,6 +166,7 @@ func (rs *Store) InspectStore() {
 	total := uint64(0)
 	storeSizeMap := make(map[string]uint64, len(rs.stores))
 	for key, store := range rs.stores {
+
 		iterator := store.Iterator(nil, nil)
 		for ; iterator.Valid(); iterator.Next() {
 			size := uint64(len(iterator.Key()) + len(iterator.Value()))
@@ -173,10 +174,20 @@ func (rs *Store) InspectStore() {
 			storeSizeMap[key.Name()] += size
 		}
 		_ = iterator.Close()
+
+		cacheStore := rs.CacheMultiStore().GetKVStore(key)
+		cacheIterator := cacheStore.Iterator(nil, nil)
+		for ; iterator.Valid(); iterator.Next() {
+			size := uint64(len(iterator.Key()) + len(iterator.Value()))
+			total += size
+			storeSizeMap["cache:"+key.Name()] += size
+		}
+		_ = cacheIterator.Close()
 	}
 
 	fmt.Printf("store size: %+v\n", storeSizeMap)
 	fmt.Printf("total size: %d\n", total)
+
 }
 
 // MountStoreWithDB implements CommitMultiStore.
