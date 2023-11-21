@@ -163,10 +163,12 @@ func (rs *Store) MigrateStores(targetType types.StoreType, newDb dbm.DB) error {
 
 // InspectStore implements Store.
 func (rs *Store) InspectStore() {
+	fmt.Printf("application db status, %+v", rs.db.Stats())
+
 	total := uint64(0)
 	storeSizeMap := make(map[string]uint64, len(rs.stores))
+	iavlSizeMap := make(map[string]uint64, len(rs.stores))
 	for key, store := range rs.stores {
-
 		iterator := store.Iterator(nil, nil)
 		for ; iterator.Valid(); iterator.Next() {
 			size := uint64(len(iterator.Key()) + len(iterator.Value()))
@@ -183,10 +185,18 @@ func (rs *Store) InspectStore() {
 			storeSizeMap["cache:"+key.Name()] += size
 		}
 		_ = cacheIterator.Close()
+
+		if store, ok := store.(*cache.CommitKVStoreCache); ok {
+			if iavlStore, ok := store.CommitKVStore.(*iavl.Store); ok {
+				size := uint64(iavlStore.CloneMutableTree().Size())
+				iavlSizeMap[key.Name()] += size
+			}
+		}
 	}
 
 	fmt.Printf("store size: %+v\n", storeSizeMap)
 	fmt.Printf("total size: %d\n", total)
+	fmt.Printf("iavl size: %+v\n", iavlSizeMap)
 
 }
 
