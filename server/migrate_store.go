@@ -92,3 +92,43 @@ the new application db will use plain DB store types.
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
 	return cmd
 }
+
+func InspectStoreCmd(appCreator types.AppCreator, defaultNodeHome string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "inspect-store",
+		Short: "inspect application db",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := GetServerContextFromCmd(cmd)
+			cfg := ctx.Config
+			home := cfg.RootDir
+			db, err := openDB(home, GetAppDBBackend(ctx.Viper))
+			if err != nil {
+				return err
+			}
+			config, err := serverconfig.GetConfig(ctx.Viper)
+			if err != nil {
+				return err
+			}
+			genDocProvider := node.DefaultGenesisDocProviderFunc(ctx.Config)
+			genDoc, err := genDocProvider()
+			if err != nil {
+				return err
+			}
+			app := appCreator(ctx.Logger, db, nil, genDoc.ChainID, &config, ctx.Viper)
+
+			if err = app.CommitMultiStore().LoadLatestVersion(); err != nil {
+				return err
+			}
+			rs, ok := app.CommitMultiStore().(*rootmulti.Store)
+			if !ok {
+				return errors.New("cannot convert store to root multi store")
+			}
+
+			rs.InspectStore()
+			return nil
+		},
+	}
+
+	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
+	return cmd
+}
